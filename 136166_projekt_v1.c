@@ -73,7 +73,7 @@ void v(FILE **datastream, FILE **stringstream, FILE **parsestream)
             break;
 
         default:
-            printf("V: Nesprávne volba vypisu.");
+            printf("V: Nesprávne volba vypisu.\n");
             break;
     }
 }
