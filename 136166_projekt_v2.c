@@ -82,7 +82,7 @@ void v(FILE **datastream, FILE **stringstream, FILE **parsestream, char ***d_dat
         case 2:
             if (*d_datastream == NULL || *d_stringstream == NULL || *d_parsestream == NULL)
             {
-                printf("V2: Nenaplnene polia.");
+                printf("V2: Nenaplnene polia.\n");
                 break;
             }
             for (i = 0; i < string_max_count; i++)
@@ -151,7 +151,7 @@ void h(FILE *stringstream)
 
 
 
-void n(FILE *datastream, FILE *stringstream, FILE *parsestream, char ***d_datastream, char ***d_stringstream, char ***d_parsestream, int *string_max_count)
+void n(FILE *datastream, FILE *stringstream, FILE *parsestream, char ***d_datastream, char ***d_stringstream, char ***d_parsestream, int *string_max_count, int *initial_string_max_count)
 {
     if (datastream == NULL || stringstream == NULL || parsestream == NULL) //Break if file isn't open
     {
@@ -199,6 +199,8 @@ void n(FILE *datastream, FILE *stringstream, FILE *parsestream, char ***d_datast
     *string_max_count = datastream_strings;
     if (*string_max_count < stringstream_strings) *string_max_count = stringstream_strings;
     if (*string_max_count < parsestream_strings) *string_max_count = parsestream_strings;
+
+    *initial_string_max_count = *string_max_count;
     #pragma endregion
 
     #pragma region //Preparation of dynamical arrays
@@ -298,7 +300,11 @@ void q(char ***d_datastream, char ***d_stringstream, char ***d_parsestream, int 
         //Rewriting
         scanf("%s\n", buffer_stringf);
         fgets(buffer_dataf, BUFFER_DATAF_SIZE, stdin);
-        scanf("%s\n", buffer_parsef);
+        fgets(buffer_parsef, BUFFER_PARSEF_SIZE, stdin);
+
+        remove_newline_symbols(buffer_dataf, BUFFER_DATAF_SIZE);
+        remove_newline_symbols(buffer_stringf, BUFFER_STRINGF_SIZE);
+        remove_newline_symbols(buffer_parsef, BUFFER_PARSEF_SIZE);
 
         for (i = 0; i < BUFFER_DATAF_SIZE; i++)
             (*d_datastream)[Y][i] = buffer_dataf[i];
@@ -381,20 +387,36 @@ void w(char ***d_datastream, char ***d_stringstream, char ***d_parsestream, int 
 
 
 
-void e(char ***d_parsestream, int *string_max_count)
+void e(char ***d_parsestream, int *string_max_count, int *initial_string_max_count, FILE *parsestream)
 {
     if (*d_parsestream == NULL)
         printf("E: Polia nie su vytvorene.\n");
     else
     {
+        char buffer_parsef[BUFFER_PARSEF_SIZE];
         char buffer_parsef_input[BUFFER_PARSEF_SIZE];
+        char **buffer_parsef_used;
         int i, j;
+        buffer_parsef_used = NULL;
 
         //Check if buffer_parsef_input is a substring of (*d_parsestream)[i] with strstr
         scanf("%s", buffer_parsef_input);
         for (i = 0; i < *string_max_count; i++)
+        {
             if (strstr((*d_parsestream)[i], buffer_parsef_input) != NULL)
-                printf("%s\n", (*d_parsestream)[i]);
+            {
+                for (j = 0; j < *initial_string_max_count; j++)
+                {
+                    fgets(buffer_parsef, BUFFER_PARSEF_SIZE, parsestream);
+                    remove_newline_symbols(buffer_parsef, BUFFER_PARSEF_SIZE);
+
+                    if (strcmp((*d_parsestream)[i], buffer_parsef) == 0)
+                    {
+                        printf("%s\n", (*d_parsestream)[i]);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -411,7 +433,7 @@ int main()
     d_strf = NULL;
     d_parsef = NULL;
 
-    int string_max_count, i;
+    int string_max_count, initial_string_max_count, i;
     #pragma endregion
 
     while (1)
@@ -425,7 +447,7 @@ int main()
                 h(strf);
                 break;
             case 'n':
-                n(dataf, strf, parsef, &d_dataf, &d_strf, &d_parsef, &string_max_count);
+                n(dataf, strf, parsef, &d_dataf, &d_strf, &d_parsef, &string_max_count, &initial_string_max_count);
                 break;
             case 'q':
                 q(&d_dataf, &d_strf, &d_parsef, &string_max_count);
@@ -434,7 +456,7 @@ int main()
                 w(&d_dataf, &d_strf, &d_parsef, &string_max_count);
                 break;
             case 'e':
-                e(&d_parsef, &string_max_count);
+                e(&d_parsef, &string_max_count, &initial_string_max_count, parsef);
                 break;
             case 'k':
                 for (i = 0; i < string_max_count; i++)
