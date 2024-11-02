@@ -378,6 +378,9 @@ void w(char ***d_datastream, char ***d_stringstream, char ***d_parsestream, int 
             *d_datastream = (char **)realloc(*d_datastream, (*string_max_count) * sizeof(char *));
             *d_stringstream = (char **)realloc(*d_stringstream, (*string_max_count) * sizeof(char *));
             *d_parsestream = (char **)realloc(*d_parsestream, (*string_max_count) * sizeof(char *));
+
+            free(found_index);
+            found_index = NULL;
             #pragma endregion
         }
 
