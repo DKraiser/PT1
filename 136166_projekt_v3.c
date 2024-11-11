@@ -75,7 +75,7 @@ void find_initial_string_max_count(FILE *datastream, FILE *stringstream, FILE *p
     if (*initial_string_max_count < parsestream_strings) *initial_string_max_count = parsestream_strings;
 }
 
-void create_data_value(data_element *data_value, FILE *datastream, int number_of_string) //Create structure for data.txt in linked list  
+void create_data_value_from_file(data_element *data_value, FILE *datastream, int number_of_string) //Create structure for data.txt in linked list  
 {
     int i;
     char buffer_dataf[BUFFER_DATAF_SIZE];
@@ -101,7 +101,7 @@ void create_data_value(data_element *data_value, FILE *datastream, int number_of
     sscanf(buffer_dataf, "%s %s %s %s", data_value->Hodnota_1, data_value->Hodnota_2, data_value->Hodnota_ID, data_value->Hodnota_zn);
 }
 
-void create_string_value(char **string_value, FILE *stringstream, int number_of_string) //Create string for string.txt in linked list... Useless, but it seems to be good in my context
+void create_string_value_from_file(char **string_value, FILE *stringstream, int number_of_string) //Create string for string.txt in linked list... Useless, but it seems to be good in my context
 {
     int i;
     char buffer_stringf[BUFFER_STRINGF_SIZE];
@@ -117,7 +117,7 @@ void create_string_value(char **string_value, FILE *stringstream, int number_of_
     strcpy(*string_value, buffer_stringf);
 }
 
-void create_parse_value(parse_element *parse_value, FILE *parsestream, int number_of_string) //Create structure for parse.txt in linked list
+void create_parse_value_from_file(parse_element *parse_value, FILE *parsestream, int number_of_string) //Create structure for parse.txt in linked list
 {
     int i, j, last_splitter_index, s;
     char buffer_parsef[BUFFER_PARSEF_SIZE], *buffer_time;
@@ -189,6 +189,107 @@ void create_parse_value(parse_element *parse_value, FILE *parsestream, int numbe
     }
 }
 
+void create_linked_list_item_from_file(LINKED_LIST_ITEM *item, int number_of_string, LINKED_LIST_ITEM *tail, FILE *datastream, FILE *stringstream, FILE *parsestream) //I want to add some OOP style. Idk, it looks like factory method, but it's just a procedure
+{
+    item->tail = tail;
+    create_data_value_from_file(&(item->data_value), datastream, number_of_string);
+    create_string_value_from_file(&(item->string_value), stringstream, number_of_string);
+    create_parse_value_from_file(&(item->parse_value), parsestream, number_of_string);
+}
+
+void create_data_value_from_string(data_element *data_value, char *string)
+{
+    data_value->Hodnota_1 = malloc(BUFFER_DATAF_SUBSTRING_SIZE);
+    data_value->Hodnota_2 = malloc(BUFFER_DATAF_SUBSTRING_SIZE);
+    data_value->Hodnota_ID = malloc(BUFFER_DATAF_SUBSTRING_SIZE);
+    data_value->Hodnota_zn = malloc(BUFFER_DATAF_SUBSTRING_SIZE);
+
+    buffer_flush(data_value->Hodnota_1, BUFFER_DATAF_SUBSTRING_SIZE);
+    buffer_flush(data_value->Hodnota_2, BUFFER_DATAF_SUBSTRING_SIZE);
+    buffer_flush(data_value->Hodnota_ID, BUFFER_DATAF_SUBSTRING_SIZE);
+    buffer_flush(data_value->Hodnota_zn, BUFFER_DATAF_SUBSTRING_SIZE);
+    
+    sscanf(string, "%s %s %s %s", data_value->Hodnota_1, data_value->Hodnota_2, data_value->Hodnota_ID, data_value->Hodnota_zn);
+}
+
+void create_string_value_from_string(char **string_value, char *string)
+{
+    *string_value = malloc(BUFFER_STRINGF_SIZE);
+    strcpy(*string_value, string);
+}
+
+void create_parse_value_from_string(parse_element *parse_value, char *string)
+{
+    int i, j, last_splitter_index, s;
+    char *buffer_time;
+
+    parse_value->Poznámka_ID = NULL;
+    parse_value->Poznámka_N1 = NULL;
+    buffer_time = NULL;
+    parse_value->Poznámka_Hodina = NULL;
+    parse_value->Poznámka_Minuta = NULL;
+    parse_value->Poznámka_T = NULL;
+
+    //As long as idk the sizes of substrings in parse.txt, im initializing all the fields in such an iterative way
+    i = 0;
+    s = 1;
+    while (string[i] != '#')
+    {
+        parse_value->Poznámka_ID = realloc(parse_value->Poznámka_ID, s++);
+        parse_value->Poznámka_ID[i] = string[i];
+        i++;
+    }
+    
+    s = 1;
+    last_splitter_index = i++;
+    while (string[i] != '#')
+    {
+        parse_value->Poznámka_N1 = realloc(parse_value->Poznámka_N1, s++);
+        parse_value->Poznámka_N1[i - last_splitter_index - 1] = string[i];
+        i++;
+    }
+
+    s = 1;
+    last_splitter_index = i++;
+    while (string[i] != '#')
+    {
+        buffer_time = realloc(buffer_time, s++);
+        buffer_time[i - last_splitter_index - 1] = string[i];
+        i++;
+    }
+
+    s = 1;
+    for (j = 0; j < 2; j++)
+    {
+        if (buffer_time == NULL)
+            break;
+        parse_value->Poznámka_Hodina = realloc(parse_value->Poznámka_Hodina, s);
+        parse_value->Poznámka_Minuta = realloc(parse_value->Poznámka_Minuta, s++);
+        parse_value->Poznámka_Hodina[j] = buffer_time[j];
+        parse_value->Poznámka_Minuta[j] = buffer_time[j + 2];
+    }
+
+    free(buffer_time);
+    buffer_time = NULL;
+
+    s = 1;
+    last_splitter_index = i++;
+    while (string[i] != '#')
+    {
+        parse_value->Poznámka_T = realloc(parse_value->Poznámka_T, s++);
+        parse_value->Poznámka_T[i - last_splitter_index - 1] = string[i];
+        i++;
+    }
+}
+
+void create_linked_list_item_from_string(LINKED_LIST_ITEM *item, LINKED_LIST_ITEM *tail, char *data_string, char *string_string, char *parse_string)
+{
+    item->tail = tail;
+    create_data_value_from_string(&(item->data_value), data_string);
+    create_string_value_from_string(&(item->string_value), string_string);
+    create_parse_value_from_string(&(item->parse_value), parse_string);
+}
+
 void free_data_element(data_element *data_value)
 {
     free(data_value->Hodnota_1);
@@ -215,14 +316,6 @@ void free_parse_element(parse_element *parse_value)
     parse_value->Poznámka_Hodina = NULL;
     parse_value->Poznámka_Minuta = NULL;
     parse_value->Poznámka_T = NULL;
-}
-
-void create_linked_list_item(LINKED_LIST_ITEM *item, int number_of_string, LINKED_LIST_ITEM *tail, FILE *datastream, FILE *stringstream, FILE *parsestream) //I want to add some OOP style. Idk, it looks like factory method, but it's just a procedure
-{
-    item->tail = tail;
-    create_data_value(&(item->data_value), datastream, number_of_string);
-    create_string_value(&(item->string_value), stringstream, number_of_string);
-    create_parse_value(&(item->parse_value), parsestream, number_of_string);
 }
 
 void v(FILE **datastream, FILE **stringstream, FILE **parsestream, char ***d_datastream, char ***d_stringstream, char ***d_parsestream, LINKED_LIST_ITEM *linked_list, int *l_string_max_count, int *d_string_max_count, int *initial_string_max_count)
@@ -665,13 +758,13 @@ void m(FILE *datastream, FILE *stringstream, FILE *parsestream, LINKED_LIST_ITEM
     }
     
     current_list_item = malloc(sizeof(LINKED_LIST_ITEM));
-    create_linked_list_item(current_list_item, initial_string_max_count - 1, NULL, datastream, stringstream, parsestream); //Creating last item of linked list
+    create_linked_list_item_from_file(current_list_item, initial_string_max_count - 1, NULL, datastream, stringstream, parsestream); //Creating last item of linked list
 
     for (i = initial_string_max_count - 2; i >= 0; i--) //Creating new linked list
     {
         tail_list_item = current_list_item;
         current_list_item = malloc(sizeof(LINKED_LIST_ITEM));
-        create_linked_list_item(current_list_item, i, tail_list_item, datastream, stringstream, parsestream);
+        create_linked_list_item_from_file(current_list_item, i, tail_list_item, datastream, stringstream, parsestream);
     }
 
     *first_list_item = current_list_item;
@@ -681,6 +774,214 @@ void m(FILE *datastream, FILE *stringstream, FILE *parsestream, LINKED_LIST_ITEM
     *d_string_max_count = initial_string_max_count;
     printf("M: Nacitalo sa %d zaznamov.\n", initial_string_max_count);
 }
+
+
+
+void a(LINKED_LIST_ITEM **first_list_item, int *l_string_max_count)
+{
+    #pragma region //Variables
+    int i, j;
+    char buffer_dataf[BUFFER_DATAF_SIZE];
+    char buffer_stringf[BUFFER_STRINGF_SIZE];
+    char buffer_parsef[BUFFER_PARSEF_SIZE];
+
+    LINKED_LIST_ITEM *new_element, *current_element, *prev_element;
+    int Y;
+    #pragma endregion
+
+    (*l_string_max_count)++;
+    current_element = *first_list_item;
+    prev_element = NULL;
+
+    //Checking whether LL is created or not
+    if (*first_list_item != NULL)
+    {
+        scanf("%d", &Y);
+        Y = (Y <= (*l_string_max_count) ? Y - 1 : (*l_string_max_count) - 1);
+    }
+    else
+        Y = 0;
+
+    #pragma region //Preparation of buffers
+    buffer_flush(buffer_dataf, BUFFER_DATAF_SIZE);
+    buffer_flush(buffer_stringf, BUFFER_STRINGF_SIZE);
+    buffer_flush(buffer_parsef, BUFFER_PARSEF_SIZE);
+
+    scanf("%s\n", buffer_stringf);
+    fgets(buffer_dataf, BUFFER_DATAF_SIZE, stdin);
+    fgets(buffer_parsef, BUFFER_PARSEF_SIZE, stdin);
+
+    remove_newline_symbols(buffer_dataf, BUFFER_DATAF_SIZE);
+    remove_newline_symbols(buffer_stringf, BUFFER_STRINGF_SIZE);
+    remove_newline_symbols(buffer_parsef, BUFFER_PARSEF_SIZE);
+    #pragma endregion
+
+    for (i = 0; i < Y; i++)
+    {
+        prev_element = current_element;
+        current_element = current_element->tail;
+    }
+
+    //Creation of new element
+    new_element = malloc(sizeof(LINKED_LIST_ITEM));
+    create_linked_list_item_from_string(new_element, current_element, buffer_dataf, buffer_stringf, buffer_parsef);
+
+    if (prev_element == NULL)
+        *first_list_item = new_element;
+    else
+        prev_element->tail = new_element;
+}
+
+
+
+void s(LINKED_LIST_ITEM **first_list_item, int *l_string_max_count)
+{
+    if (*first_list_item == NULL)
+    {
+        printf("S: Spajany zoznam nie je vytvorený\n");
+        return;
+    }
+
+    #pragma region //Variables
+    int i, j, *found_index, found_index_count, pointer, result_of_comparison;
+    char buffer_stringf[BUFFER_STRINGF_SIZE];
+    LINKED_LIST_ITEM *current_element, *previous_element, *previous_element_tail, **found_elements;
+
+    current_element = *first_list_item;
+    previous_element = NULL;
+    found_index = NULL;
+    found_index_count = 0;
+    pointer = 0;
+    #pragma endregion
+
+    //Find strings' numbers
+    i = 0;
+    buffer_flush(buffer_stringf, BUFFER_STRINGF_SIZE);
+    scanf("%s", buffer_stringf);
+    remove_newline_symbols(buffer_stringf, BUFFER_STRINGF_SIZE);
+
+    while (current_element != NULL)
+    {
+        result_of_comparison = strcmp(current_element->string_value, buffer_stringf);
+        if(result_of_comparison == 0)
+        {
+            found_index = (int *)realloc(found_index, (++found_index_count) * sizeof(int));
+            found_index[found_index_count - 1] = i;
+        }
+        i++;
+        current_element = current_element->tail;
+    }
+
+    #pragma region //Moving records
+    found_elements = malloc(found_index_count * sizeof(LINKED_LIST_ITEM*));
+    current_element = *first_list_item;
+    if (found_index_count > 0)
+    {
+        for (i = 0; i < *l_string_max_count - 1; i++)
+        {
+            if (i != found_index[pointer])
+            {
+                previous_element = current_element;
+                current_element = current_element->tail;
+                continue;
+            }
+            
+            found_elements[pointer++] = current_element;
+            current_element = current_element->tail;
+            if (previous_element != NULL)
+                previous_element->tail = current_element;
+        }
+
+        //Special for last item in list
+        if (i == found_index[pointer])
+        {
+            found_elements[pointer++] = current_element;
+            if (previous_element != NULL)
+                previous_element->tail = NULL;
+        }
+    }
+    #pragma endregion
+
+    #pragma region //Memory freeing
+    for (i = 0; i < found_index_count; i++)
+    {
+        if (*first_list_item == found_elements[i])
+            *first_list_item = (*first_list_item)->tail; 
+        free_data_element(&(found_elements[i]->data_value));
+        free(found_elements[i]->string_value);
+        found_elements[i]->string_value = NULL;
+        free_parse_element(&(found_elements[i]->parse_value));
+        free(found_elements[i]);
+        found_elements[i] = NULL;
+    }
+
+    free(found_elements);
+    free(found_index);
+    found_elements = NULL;
+    found_index = NULL;
+    #pragma endregion
+
+    *l_string_max_count -= found_index_count;
+    printf("S: Vymazalo sa : %d zaznamov !\n", found_index_count);
+}
+
+
+
+void d(LINKED_LIST_ITEM **first_list_item, int *l_string_max_count)
+{
+    //Variables
+    int i, c1, c2, t;
+    LINKED_LIST_ITEM *i1, *i2, temp, *prev_i1, *prev_i2, *temp_prev;
+    scanf("%d %d", &c1, &c2);
+
+    if (c1 > *l_string_max_count || c1 <= 0 || c2 > *l_string_max_count || c2 <= 0 || c1 == c2)
+        return;
+
+    if (c1 > c2) //If c2 > c1, there is a cycle, and Im too lazy to figure out another algorithm.
+    {
+        t = c1;
+        c1 = c2;
+        c2 = t;
+    }
+    #pragma region //Setting pointers i1, i2, temp to items we need 
+    c1--;
+    c2--;
+    i1 = *first_list_item;
+    i2 = *first_list_item;
+    prev_i1 = NULL;
+    prev_i2 = NULL;
+
+    for (i = 0; i < c1; i++)
+    {
+        if(i == c1 - 1 && c1 != 0)
+            prev_i1 = i1;
+        i1 = i1->tail;
+    }
+
+    for (i = 0; i < c2; i++)
+    {
+        if (i == c2 - 1 && c2 != 0)
+            prev_i2 = i2;
+        i2 = i2->tail;
+    }
+    #pragma endregion    
+
+    #pragma region //Pointer swap
+    temp = *i2;
+    if (prev_i1 == NULL)
+        *first_list_item = i2;
+    else
+        prev_i1->tail = i2;
+
+    if (c2 - c1 != 1)
+        i2->tail = i1->tail;
+    else i2->tail = i1;
+    prev_i2->tail = i1;
+    i1->tail = temp.tail;
+    #pragma endregion
+}
+
+
 
 int main()
 {
@@ -699,6 +1000,10 @@ int main()
     linked_list = NULL;
 
     int l_string_max_count, d_string_max_count, initial_string_max_count, i;
+    l_string_max_count = 0;
+    d_string_max_count = 0;
+    initial_string_max_count = 0;
+
     #pragma endregion
 
     while (1)
@@ -724,7 +1029,16 @@ int main()
                 e(&d_parsef, &d_string_max_count, &initial_string_max_count, parsef);
                 break;
             case 'm':
-                m(dataf, strf, parsef, &linked_list, &d_string_max_count, initial_string_max_count);
+                m(dataf, strf, parsef, &linked_list, &l_string_max_count, initial_string_max_count);
+                break;
+            case 'a':
+                a(&linked_list, &l_string_max_count);
+                break;
+            case 's':
+                s(&linked_list, &l_string_max_count);
+                break;
+            case 'd':
+                d(&linked_list, &l_string_max_count);
                 break;
             case 'k':
                 if (dataf != NULL)
