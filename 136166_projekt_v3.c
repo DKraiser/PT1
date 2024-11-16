@@ -412,7 +412,7 @@ void v(FILE **datastream, FILE **stringstream, FILE **parsestream, char ***d_dat
             }
             while (current_list_item != NULL)
             {
-                printf("ID. mer. Modulu: %s\n", current_list_item->string_value);
+                printf("ID. mer. modulu: %s\n", current_list_item->string_value);
                 printf("Hodnota 1: %s\n", current_list_item->data_value.Hodnota_ID);
                 printf("Hodnota 2: %s\n", current_list_item->data_value.Hodnota_zn);
                 printf("Poznámka ID: %s\n", (current_list_item->parse_value.Poznámka_ID != NULL ? current_list_item->parse_value.Poznámka_ID : "NaN"));
@@ -695,7 +695,8 @@ void w(char ***d_datastream, char ***d_stringstream, char ***d_parsestream, int 
 
 
 void e(char ***d_parsestream, int *d_string_max_count, int *initial_string_max_count, FILE *parsestream)
-{
+{   
+    getchar(); //Fix of clicking Enter
     if (*d_parsestream == NULL)
         printf("E: Polia nie su vytvorene.\n");
     else
@@ -707,13 +708,16 @@ void e(char ***d_parsestream, int *d_string_max_count, int *initial_string_max_c
         buffer_parsef_used = NULL;
 
         //Check if buffer_parsef_input is a substring of (*d_parsestream)[i] with strstr
-        scanf("%s", buffer_parsef_input);
+        buffer_flush(buffer_parsef_input, BUFFER_PARSEF_SIZE);
+        fgets(buffer_parsef_input, BUFFER_PARSEF_SIZE, stdin);
+        remove_newline_symbols(buffer_parsef_input, BUFFER_PARSEF_SIZE);
         for (i = 0; i < *d_string_max_count; i++)
         {
             if (strstr((*d_parsestream)[i], buffer_parsef_input) != NULL)
             {
                 for (j = 0; j < *initial_string_max_count; j++)
                 {
+                    buffer_flush(buffer_parsef, BUFFER_PARSEF_SIZE);
                     fgets(buffer_parsef, BUFFER_PARSEF_SIZE, parsestream);
                     remove_newline_symbols(buffer_parsef, BUFFER_PARSEF_SIZE);
 
@@ -723,6 +727,7 @@ void e(char ***d_parsestream, int *d_string_max_count, int *initial_string_max_c
                     }
                 }
             }
+            rewind(parsestream);
         }
     }
 }
@@ -838,7 +843,7 @@ void s(LINKED_LIST_ITEM **first_list_item, int *l_string_max_count)
 {
     if (*first_list_item == NULL)
     {
-        printf("S: Spajany zoznam nie je vytvorený\n");
+        printf("S: Spajany zoznam nie je vytvorený.\n");
         return;
     }
 
@@ -1071,17 +1076,24 @@ int main()
 
                 if (linked_list != NULL)
                 {
-                    LINKED_LIST_ITEM *next;
-                    next = linked_list;
-                    while (next != NULL)
+                    LINKED_LIST_ITEM *next, *cur;
+                    cur = linked_list;
+                    while (cur != NULL)
                     {
-                        free_data_element(&(next->data_value));
-                        free(next->string_value);
-                        next->string_value = NULL; 
-                        free_parse_element(&(next->parse_value));
+                        next = cur->tail;
 
-                        next = next->tail;
+                        free_data_element(&(cur->data_value));
+                        free(cur->string_value);
+                        cur->string_value = NULL; 
+                        free_parse_element(&(cur->parse_value));
+                        free(cur);
+
+                        cur = next;
                     }
+
+                    cur = NULL;
+                    next = NULL;
+                    linked_list = NULL;
                 }
                 return 0;
         }
